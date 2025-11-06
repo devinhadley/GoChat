@@ -1,8 +1,9 @@
-I want to learn Go and Web Sockets.
+I want to learn Go, Web Sockets, implementing JSON web tokens, and oath.
 
 I also want to improve at writing pure CSS and HTML.
 
-GoChat will be a simple peer to peer messaging platform.
+GoChat will be a simple peer to peer messaging platform aimed at bolstering these skills.
 
-Generates an unguessable link which allows for two users to communicate with each other in real time.
+As a first iteration
 
+Users will signup, add eachother, and then engage in private messaging.
