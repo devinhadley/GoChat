@@ -14,6 +14,8 @@ It will use server side rendering for the UI and UI flow with sockets/messaging 
 
 I will develop the entire platform using VIM with no plugins to bolster learning.
 
+It will be hosted on my home server at gochat.devinhadley.com 
+
 **Roadmap**
 
 1.) Session authentication and simple login interface.
