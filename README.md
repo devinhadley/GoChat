@@ -1,17 +1,19 @@
-I want to learn Go, Web Sockets, implementing JSON web tokens, implementing session auth from scratch, and eventually oath.
+**I want to learn:**
+- Go
+- Web Sockets
+- Implementing session auth from "scratch".
+- Social auth from "scratch".
 
-I also want to improve at writing pure CSS and HTML.
+**I want to improve at:**
 
-The main objective of this is to create an application utilizing primitive web technologies i.e. no react or heavy django abstractions.
+- Writing pure html, css, and javascript.
 
-GoChat will be a client server messaging platform aimed at bolstering these skills.
+GoChat will be client server messaging platform aimed at bolstering these skills.
 
+It will use server side rendering for the UI and UI flow with sockets/messaging being the only use of JS.
 
-Roadmap
-
+**Roadmap**
 
 1.) Session authentication and simple login interface.
 
-
-
-
+2.) Chat interface (one global room).
