@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func pong(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "pong"})
+func home(c *gin.Context) {
+	c.HTML(http.StatusOK, "home.html", gin.H{})
 }
 
 func main() {
@@ -16,7 +16,10 @@ func main() {
 
 	router.Static("/static", "./css")
 
-	router.GET("/ping", pong)
+	router.LoadHTMLGlob("./templates/*")
+
+	// Routes...
+	router.GET("", home)
 
 	err := router.Run()
 	if err != nil {
