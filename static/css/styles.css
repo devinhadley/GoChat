@@ -1,11 +1,14 @@
+:root {
+  --color-dark-gray: #343a40;
+}
+
 body {
   margin: 0;
   padding: 0;
   font-family: Arial,
     Helvetica,
     sans-serif;
-  color: #343a40;
-  /* Default text color charcoal grey. */
+  color: var(--color-dark-gray)
 }
 
 nav {
@@ -20,8 +23,12 @@ main {
 }
 
 .logo-image {
-  max-height: 90px;
+  max-height: 70px;
   margin: 5px;
+}
+
+.auth-footer {
+  text-align: center;
 }
 
 /* Note: Flex only applies to direct children! */
@@ -48,23 +55,26 @@ form input {
   border-radius: 5px;
   border: none;
   border-bottom: 2px solid lightgray;
-  margin-top: 2px;
 }
 
 form input:focus {
-  border: 2px solid lightgray;
+  outline: none;
+  border-bottom: 2px solid black;
 }
 
 form button {
-  background-color: #343a40;
+  background-color: var(--color-dark-gray);
   color: white;
   padding: 10px;
   border-radius: 5px;
-  cursor: pointer;
   font-weight: bold;
   font-size: 0.9rem;
 }
 
+form button:hover {
+  background-color: black;
+  cursor: pointer;
+}
 
 a.nostyle:link {
   text-decoration: inherit;

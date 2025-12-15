@@ -15,6 +15,10 @@ func login(c *gin.Context) {
 	c.HTML(http.StatusOK, "login.html", gin.H{})
 }
 
+func signup(c *gin.Context) {
+	c.HTML(http.StatusOK, "signup.html", gin.H{})
+}
+
 func main() {
 	router := gin.Default()
 
@@ -25,6 +29,7 @@ func main() {
 	// Routes...
 	router.GET("", home)
 	router.GET("/login", login)
+	router.GET("/signup", signup)
 
 	err := router.Run()
 	if err != nil {
