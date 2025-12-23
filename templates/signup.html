@@ -1,23 +1,38 @@
 {{ template "header" . }}
 <h1>Sign Up</h1>
-<form>
+
+<form method="POST">
 
 	<div>
 		<label for="username">Username</label>
-		<input type="text" id="username" name="username">
+
+		<input type="text" id="username" name="username" value="{{ .form.Username }}" required>
+
+		{{ if .errors.Username }}
+		<small style="color: red;">{{ .errors.Username }}</small>
+		{{ end }}
 	</div>
 
 	<div>
 		<label for="password">Password</label>
-		<input type="password" id="password" name="password">
+		<input type="password" id="password" name="password" required>
+
+		{{ if .errors.Password }}
+		<small style="color: red;">{{ .errors.Password }}</small>
+		{{ end }}
 	</div>
 
 	<div>
 		<label for="confirm-password">Confirm Password</label>
-		<input type="password" id="confirm-password" name="confirm-password">
+		<input type="password" id="confirm-password" name="confirm-password" required>
+
+		{{ if .errors.ConfirmPassword }}
+		<small style="color: red;">{{ .errors.ConfirmPassword }}</small>
+		{{ end }}
 	</div>
 
 	<button>Sign Up</button>
 </form>
+
 <p class="auth-footer">Already have an account? <a href="/login">Login</a></p>
 {{ template "footer" . }}

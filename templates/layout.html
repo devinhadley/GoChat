@@ -14,6 +14,12 @@
 			</a>
 		</nav>
 
+		{{ if .isShowingInternalError }}
+		<div class="internal-error-banner">
+			<h3>An internal error occured.</h3>
+		</div>
+		{{ end }}
+
 		<main>
 			{{ end }}
 			{{ define "footer" }}

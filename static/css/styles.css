@@ -87,3 +87,15 @@ a.nostyle:visited {
   color: inherit;
   cursor: pointer;
 }
+
+
+.internal-error-banner {
+  background-color: palevioletred;
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  border: 2px solid red;
+  text-align: center;
+  margin-top: 10px;
+  color: white;
+}
