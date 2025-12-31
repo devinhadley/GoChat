@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"gochat/main/internal/application"
 	"gochat/main/internal/handlers"
+	"gochat/main/internal/store"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,11 +24,9 @@ func main() {
 	router.Static("/static", "./static")
 	router.LoadHTMLGlob("./templates/*")
 
-	app := &application.App{
-		DB: dbConPool,
-	}
+	userStore := store.NewUserStore(dbConPool)
 	router.GET("", handlers.Home)
-	addUserHandlers(router, app)
+	addUserHandlers(router, userStore)
 
 	err = router.Run()
 	if err != nil {
@@ -36,8 +34,8 @@ func main() {
 	}
 }
 
-func addUserHandlers(router *gin.Engine, app *application.App) {
+func addUserHandlers(router *gin.Engine, userStore *store.UserStore) {
 	router.GET("/login", handlers.Login)
 	router.GET("/signup", handlers.SignUp)
-	router.POST("/signup", handlers.CreateUser(app))
+	router.POST("/signup", handlers.CreateUser(userStore))
 }

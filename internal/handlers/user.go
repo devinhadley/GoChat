@@ -3,6 +3,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"gochat/main/internal/store"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type SignUpForm struct {
@@ -26,8 +28,14 @@ func SignUp(c *gin.Context) {
 	c.HTML(http.StatusOK, "signup.html", gin.H{})
 }
 
+// TODO: Move me!
+func isUniqueConstraintViolatedError(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
+
 // CreateUser effectively allows for sign up.
-func CreateUser(userStore store.UserStore) gin.HandlerFunc {
+func CreateUser(userService *store.UserService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var signUpForm SignUpForm
 
@@ -49,22 +57,17 @@ func CreateUser(userStore store.UserStore) gin.HandlerFunc {
 			return
 		}
 
-		// 1. Check if user with username already exists.
-		// 2. Hash the password.
-		// 3. Store user with hashed password in the database.
-
+		_, err := userService.CreateUser(signUpForm.Username, signUpForm.Password, c)
 		if err != nil {
+			if isUniqueConstraintViolatedError(err) {
+				c.HTML(http.StatusBadRequest, "signup.html", gin.H{
+					"errors": gin.H{"Username": "User with that username already exists."},
+					"form":   signUpForm,
+				})
+			} else {
+				utils.HandleInternalServerError(c, err, "An internal server error occured.", "signup.html", signUpForm)
+			}
 
-			utils.ShowInternalServerError(c, err, "An error occurred when querying if username exists", "signup.html", signUpForm)
-			return
-		}
-
-		isDupUsername, error :=  userStore.DoesUserWithUsernameExist(signUpForm.Username, c)
-		if ok, e :=  {
-			c.HTML(http.StatusBadRequest, "signup.html", gin.H{
-				"errors": gin.H{"Username": "User with that username already exists."},
-				"form":   signUpForm,
-			})
 			return
 		}
 
