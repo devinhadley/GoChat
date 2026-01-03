@@ -7,10 +7,12 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
 	"gochat/main/internal/forms"
 	"gochat/main/internal/store"
 	"gochat/main/internal/utils/responses"
+	"gochat/main/internal/utils/sessions"
 
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -104,8 +106,25 @@ func CreateLoginHandler(userService store.UserService, templates *template.Templ
 		}
 
 		if isAuthenticated {
-			// Render home page.
-			// TODO: Add session id to cookies.
+			sessionID, err := sessions.GenerateSessionID()
+			if err != nil {
+				responses.RenderInternalErrorOnTemplate(w, templates, "login.html", map[string]any{})
+				log.Println(err)
+				return
+			}
+
+			thirtyDaysFromNow := time.Now().AddDate(0, 0, 30)
+			sessionCookie := http.Cookie{
+				Name:     "sessionid",
+				Value:    sessionID,
+				Secure:   true,
+				HttpOnly: true,
+				Expires:  thirtyDaysFromNow,
+				SameSite: http.SameSiteStrictMode,
+				Path:     "/",
+			}
+
+			http.SetCookie(w, &sessionCookie)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 		} else {
 			responses.RenderTemplate(w, templates, "login.html", map[string]any{
