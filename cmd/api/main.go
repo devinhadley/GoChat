@@ -38,6 +38,7 @@ func main() {
 
 func addUserHandlers(userService store.UserService, templates *template.Template) {
 	http.HandleFunc("GET /login", handlers.CreateLoginGetHandler(templates))
+	http.HandleFunc("POST /login", handlers.CreateLoginHandler(userService, templates))
 	http.HandleFunc("GET /signup", handlers.CreateSignUpGetHandler(templates))
 	http.HandleFunc("POST /signup", handlers.CreateUserHandler(userService, templates))
 }

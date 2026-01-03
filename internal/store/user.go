@@ -3,10 +3,12 @@ package store
 
 import (
 	"context"
+	"errors"
 
 	"gochat/main/internal/models"
 	"gochat/main/internal/utils/passwords"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -51,6 +53,11 @@ func (store *UserService) AuthenticateUser(username string, password string, con
 	var passwordHash string
 	err := store.db.QueryRow(context, getPasswordHashQuery, username).Scan(&passwordHash)
 	if err != nil {
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+
 		return false, err
 	}
 

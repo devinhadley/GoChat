@@ -1,10 +1,14 @@
 {{ template "header" . }}
 <h1>Login</h1>
-<form>
+<form method="POST">
+
+	{{ if .areCredentialsInvalid }}
+	<small style="color: red;">We couldn't find a user with the given credentials.</small>
+	{{ end }}
 
 	<div>
 		<label for="username">Username</label>
-		<input type="text" id="username" name="username">
+		<input type="text" id="username" name="username" value="{{.form.Username}}">
 	</div>
 
 	<div>

@@ -5,6 +5,7 @@ package handlers
 import (
 	"errors"
 	"html/template"
+	"log"
 	"net/http"
 
 	"gochat/main/internal/forms"
@@ -17,7 +18,7 @@ import (
 func CreateLoginGetHandler(templates *template.Template) http.HandlerFunc {
 	data := map[string]any{
 		"errors": map[string]string{},
-		"form":   map[string]string{},
+		"form":   forms.LogInForm{},
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +29,7 @@ func CreateLoginGetHandler(templates *template.Template) http.HandlerFunc {
 func CreateSignUpGetHandler(templates *template.Template) http.HandlerFunc {
 	data := map[string]any{
 		"errors": map[string]string{},
-		"form":   map[string]string{},
+		"form":   forms.SignUpForm{},
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		responses.RenderTemplate(w, templates, "signup.html", data)
@@ -56,6 +57,7 @@ func CreateUserHandler(userService store.UserService, templates *template.Templa
 		_, err := userService.CreateUser(signUpForm.Username, signUpForm.Password, r.Context())
 		if err != nil {
 			// Username is the only user populated field with a unique constraint.
+			// TODO: Kill function and add explicit conditional.
 			if isUniqueConstraintViolatedError(err) {
 
 				w.WriteHeader(http.StatusBadRequest)
@@ -67,8 +69,10 @@ func CreateUserHandler(userService store.UserService, templates *template.Templa
 				})
 
 			} else {
-				// TODO: Show error banner instead.
-				http.Error(w, "An internal error occurred.", http.StatusInternalServerError)
+				responses.RenderInternalErrorOnTemplate(w, templates, "signup.html", map[string]any{
+					"errors": map[string]string{},
+					"form":   signUpForm,
+				})
 			}
 
 			return
@@ -85,23 +89,29 @@ func CreateLoginHandler(userService store.UserService, templates *template.Templ
 		validationErrors := loginForm.Validate()
 		if len(validationErrors) > 0 {
 			w.WriteHeader(http.StatusBadRequest)
-			responses.RenderTemplate(w, templates, "signup.html", map[string]any{
-				"errors": validationErrors,
-				"form":   loginForm,
+			responses.RenderTemplate(w, templates, "login.html", map[string]any{
+				"form":                  loginForm,
+				"areCredentialsInvalid": true,
 			})
 			return
 		}
 
 		isAuthenticated, err := userService.AuthenticateUser(loginForm.Username, loginForm.Password, r.Context())
 		if err != nil {
-			// TODO: Show error banner instead.
-			http.Error(w, "An internal error occurred.", http.StatusInternalServerError)
+			responses.RenderInternalErrorOnTemplate(w, templates, "login.html", map[string]any{})
+			log.Println(err)
 			return
 		}
+
 		if isAuthenticated {
 			// Render home page.
+			// TODO: Add session id to cookies.
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		} else {
-			// Render login page with invalid credentias error.
+			responses.RenderTemplate(w, templates, "login.html", map[string]any{
+				"form":                  loginForm,
+				"areCredentialsInvalid": true,
+			})
 		}
 	}
 }
