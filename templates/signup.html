@@ -8,8 +8,8 @@
 
 		<input type="text" id="username" name="username" value="{{ .form.Username }}" required>
 
-		{{ if .errors.Username }}
-		<small style="color: red;">{{ .errors.Username }}</small>
+		{{ if index .errors "Username" }}
+		<small style="color: red;">{{ index .errors "Username" }}</small>
 		{{ end }}
 	</div>
 
@@ -17,8 +17,8 @@
 		<label for="password">Password</label>
 		<input type="password" id="password" name="password" required>
 
-		{{ if .errors.Password }}
-		<small style="color: red;">{{ .errors.Password }}</small>
+		{{ if index .errors "Password" }}
+		<small style="color: red;">{{ index .errors "Password" }}</small>
 		{{ end }}
 	</div>
 
@@ -26,8 +26,8 @@
 		<label for="confirm-password">Confirm Password</label>
 		<input type="password" id="confirm-password" name="confirm-password" required>
 
-		{{ if .errors.ConfirmPassword }}
-		<small style="color: red;">{{ .errors.ConfirmPassword }}</small>
+		{{ if index .errors "ConfirmPassword" }}
+		<small style="color: red;">{{ index .errors "ConfirmPassword" }}</small>
 		{{ end }}
 	</div>
 

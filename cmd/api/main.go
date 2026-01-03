@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"html/template"
 	"log"
+	"net/http"
 
 	"gochat/main/internal/handlers"
 	"gochat/main/internal/store"
 
-	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -20,22 +21,23 @@ func main() {
 	}
 	defer dbConPool.Close()
 
-	router := gin.Default()
-	router.Static("/static", "./static")
-	router.LoadHTMLGlob("./templates/*")
+	// TODO: Use http.CrossOriginProtection
+	fs := http.FileServer(http.Dir("./static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	userStore := store.NewUserStore(dbConPool)
-	router.GET("", handlers.Home)
-	addUserHandlers(router, userStore)
+	templates := template.Must(template.ParseGlob("./templates/*.html"))
 
-	err = router.Run()
-	if err != nil {
+	http.HandleFunc("GET /{$}", handlers.CreateHomeHandler(templates))
+	addUserHandlers(store.NewUserService(dbConPool), templates)
+
+	log.Println("Server starting on http://localhost:8080")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func addUserHandlers(router *gin.Engine, userStore *store.UserStore) {
-	router.GET("/login", handlers.Login)
-	router.GET("/signup", handlers.SignUp)
-	router.POST("/signup", handlers.CreateUser(userStore))
+func addUserHandlers(userService store.UserService, templates *template.Template) {
+	http.HandleFunc("GET /login", handlers.CreateLoginGetHandler(templates))
+	http.HandleFunc("GET /signup", handlers.CreateSignUpGetHandler(templates))
+	http.HandleFunc("POST /signup", handlers.CreateUserHandler(userService, templates))
 }

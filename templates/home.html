@@ -1,8 +1,12 @@
 {{ template "header" . }}
 
+{{if not .user}}
 <h1>GoChat</h1>
 <h3>
 	<a href="/login">Log In</a>
 	or <a href="/signup">Sign Up</a>
 </h3>
+{{else}}
+<h3>Welcome {{.user.username}}.</h3>
+{{end}}
 {{ template "footer" . }}

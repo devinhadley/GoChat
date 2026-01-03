@@ -4,73 +4,104 @@ package handlers
 
 import (
 	"errors"
+	"html/template"
 	"net/http"
 
+	"gochat/main/internal/forms"
 	"gochat/main/internal/store"
-	"gochat/main/internal/utils"
+	"gochat/main/internal/utils/responses"
 
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type SignUpForm struct {
-	Username        string `form:"username" binding:"required,max=100"`
-	Password        string `form:"password" binding:"required"`
-	ConfirmPassword string `form:"confirm-password" binding:"required,eqfield=Password"`
+func CreateLoginGetHandler(templates *template.Template) http.HandlerFunc {
+	data := map[string]any{
+		"errors": map[string]string{},
+		"form":   map[string]string{},
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		responses.RenderTemplate(w, templates, "login.html", data)
+	}
 }
 
-func Login(c *gin.Context) {
-	c.HTML(http.StatusOK, "login.html", gin.H{})
+func CreateSignUpGetHandler(templates *template.Template) http.HandlerFunc {
+	data := map[string]any{
+		"errors": map[string]string{},
+		"form":   map[string]string{},
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		responses.RenderTemplate(w, templates, "signup.html", data)
+	}
 }
 
-func SignUp(c *gin.Context) {
-	c.HTML(http.StatusOK, "signup.html", gin.H{})
-}
-
-// TODO: Move me!
 func isUniqueConstraintViolatedError(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
-// CreateUser effectively allows for sign up.
-func CreateUser(userService *store.UserService) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var signUpForm SignUpForm
+func CreateUserHandler(userService store.UserService, templates *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		signUpForm := forms.NewSignUpFormFromRequest(r)
 
-		if err := c.ShouldBind(&signUpForm); err != nil {
-			// Note to self: i.(type) is a type assertion.
-			// allows us to go from interface to concrete type.
-			//
-			displayErrors := make(map[string]string)
-			if validationError, ok := err.(validator.ValidationErrors); ok {
-				for _, vError := range validationError {
-					displayErrors[vError.Field()] = utils.MsgForTag(vError.Tag(), vError.Param())
-				}
-			}
-
-			c.HTML(http.StatusBadRequest, "signup.html", gin.H{
-				"errors": displayErrors,
+		validationErrors := signUpForm.Validate()
+		if len(validationErrors) > 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			responses.RenderTemplate(w, templates, "signup.html", map[string]any{
+				"errors": validationErrors,
 				"form":   signUpForm,
 			})
 			return
 		}
-
-		_, err := userService.CreateUser(signUpForm.Username, signUpForm.Password, c)
+		_, err := userService.CreateUser(signUpForm.Username, signUpForm.Password, r.Context())
 		if err != nil {
+			// Username is the only user populated field with a unique constraint.
 			if isUniqueConstraintViolatedError(err) {
-				c.HTML(http.StatusBadRequest, "signup.html", gin.H{
-					"errors": gin.H{"Username": "User with that username already exists."},
-					"form":   signUpForm,
+
+				w.WriteHeader(http.StatusBadRequest)
+				responses.RenderTemplate(w, templates, "signup.html", map[string]any{
+					"errors": forms.ValidationErrors{
+						"Username": "A user with this username already exists.",
+					},
+					"form": signUpForm,
 				})
+
 			} else {
-				utils.HandleInternalServerError(c, err, "An internal server error occured.", "signup.html", signUpForm)
+				// TODO: Show error banner instead.
+				http.Error(w, "An internal error occurred.", http.StatusInternalServerError)
 			}
 
 			return
 		}
 
-		c.Redirect(http.StatusFound, "/login")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	}
+}
+
+func CreateLoginHandler(userService store.UserService, templates *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		loginForm := forms.NewLogInFormFromRequest(r)
+
+		validationErrors := loginForm.Validate()
+		if len(validationErrors) > 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			responses.RenderTemplate(w, templates, "signup.html", map[string]any{
+				"errors": validationErrors,
+				"form":   loginForm,
+			})
+			return
+		}
+
+		isAuthenticated, err := userService.AuthenticateUser(loginForm.Username, loginForm.Password, r.Context())
+		if err != nil {
+			// TODO: Show error banner instead.
+			http.Error(w, "An internal error occurred.", http.StatusInternalServerError)
+			return
+		}
+		if isAuthenticated {
+			// Render home page.
+		} else {
+			// Render login page with invalid credentias error.
+		}
 	}
 }

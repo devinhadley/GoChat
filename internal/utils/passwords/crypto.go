@@ -1,5 +1,5 @@
-// Package utils provides a common set of utilites including cryptography, common error responses and more.
-package utils
+// Package passwords provides functions related to passwords & password hashing.
+package passwords
 
 import (
 	"crypto/rand"
@@ -25,7 +25,7 @@ var DefaultArgon2Params = Argon2IdParams{
 	Threads: 1,
 }
 
-func VerifyPasswordHash(password string, hashString string) (bool, error) {
+func DoesPasswordMatchHashedPassword(password string, hashString string) (bool, error) {
 	parts := strings.Split(hashString, "$")
 
 	if len(parts) != 6 {

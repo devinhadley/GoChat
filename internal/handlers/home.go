@@ -1,11 +1,16 @@
 package handlers
 
 import (
+	"html/template"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"gochat/main/internal/utils/responses"
 )
 
-func Home(c *gin.Context) {
-	c.HTML(http.StatusOK, "home.html", gin.H{})
+func CreateHomeHandler(templates *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		responses.RenderTemplate(w, templates, "home.html", map[string]any{
+			"user": nil,
+		})
+	}
 }
