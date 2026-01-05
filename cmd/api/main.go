@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"gochat/main/internal/handlers"
+	"gochat/main/internal/middleware"
 	"gochat/main/internal/store"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,24 +22,39 @@ func main() {
 	}
 	defer dbConPool.Close()
 
-	// TODO: Use http.CrossOriginProtection
+	// Templates, and static serve setup.
 	fs := http.FileServer(http.Dir("./static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
-
 	templates := template.Must(template.ParseGlob("./templates/*.html"))
 
-	http.HandleFunc("GET /{$}", handlers.CreateHomeHandler(templates))
-	addUserHandlers(store.NewUserService(dbConPool), templates)
+	// Initialize services.
+	userService := store.NewUserService(dbConPool)
+	sessionService := store.NewSessionService(dbConPool)
+
+	// Add routes and handlers to multiplexer.
+	mux := http.NewServeMux()
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	mux.HandleFunc("GET /{$}", handlers.CreateHomeHandler(templates))
+	addUserHandlers(
+		mux,
+		userService,
+		sessionService,
+		templates,
+	)
+
+	// Add middleware.
+	handler := middleware.AuthMiddleware(mux, userService)
+	crossOriginProtection := http.NewCrossOriginProtection()
+	handler = crossOriginProtection.Handler(handler)
 
 	log.Println("Server starting on http://localhost:8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":8080", handler); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func addUserHandlers(userService store.UserService, templates *template.Template) {
-	http.HandleFunc("GET /login", handlers.CreateLoginGetHandler(templates))
-	http.HandleFunc("POST /login", handlers.CreateLoginHandler(userService, templates))
-	http.HandleFunc("GET /signup", handlers.CreateSignUpGetHandler(templates))
-	http.HandleFunc("POST /signup", handlers.CreateUserHandler(userService, templates))
+func addUserHandlers(mux *http.ServeMux, userService store.UserService, sessionService store.SessionService, templates *template.Template) {
+	mux.HandleFunc("GET /login", handlers.CreateLoginGetHandler(templates))
+	mux.HandleFunc("POST /login", handlers.CreateLoginHandler(userService, sessionService, templates))
+	mux.HandleFunc("GET /signup", handlers.CreateSignUpGetHandler(templates))
+	mux.HandleFunc("POST /signup", handlers.CreateUserHandler(userService, templates))
 }

@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"time"
 
 	"gochat/main/internal/forms"
 	"gochat/main/internal/store"
@@ -24,7 +23,7 @@ func CreateLoginGetHandler(templates *template.Template) http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		responses.RenderTemplate(w, templates, "login.html", data)
+		responses.RenderTemplate(w, r, templates, "login.html", data)
 	}
 }
 
@@ -34,7 +33,7 @@ func CreateSignUpGetHandler(templates *template.Template) http.HandlerFunc {
 		"form":   forms.SignUpForm{},
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		responses.RenderTemplate(w, templates, "signup.html", data)
+		responses.RenderTemplate(w, r, templates, "signup.html", data)
 	}
 }
 
@@ -50,7 +49,7 @@ func CreateUserHandler(userService store.UserService, templates *template.Templa
 		validationErrors := signUpForm.Validate()
 		if len(validationErrors) > 0 {
 			w.WriteHeader(http.StatusBadRequest)
-			responses.RenderTemplate(w, templates, "signup.html", map[string]any{
+			responses.RenderTemplate(w, r, templates, "signup.html", map[string]any{
 				"errors": validationErrors,
 				"form":   signUpForm,
 			})
@@ -63,7 +62,7 @@ func CreateUserHandler(userService store.UserService, templates *template.Templa
 			if isUniqueConstraintViolatedError(err) {
 
 				w.WriteHeader(http.StatusBadRequest)
-				responses.RenderTemplate(w, templates, "signup.html", map[string]any{
+				responses.RenderTemplate(w, r, templates, "signup.html", map[string]any{
 					"errors": forms.ValidationErrors{
 						"Username": "A user with this username already exists.",
 					},
@@ -71,7 +70,7 @@ func CreateUserHandler(userService store.UserService, templates *template.Templa
 				})
 
 			} else {
-				responses.RenderInternalErrorOnTemplate(w, templates, "signup.html", map[string]any{
+				responses.RenderInternalErrorOnTemplate(w, r, templates, "signup.html", map[string]any{
 					"errors": map[string]string{},
 					"form":   signUpForm,
 				})
@@ -84,53 +83,49 @@ func CreateUserHandler(userService store.UserService, templates *template.Templa
 	}
 }
 
-func CreateLoginHandler(userService store.UserService, templates *template.Template) http.HandlerFunc {
+func CreateLoginHandler(userService store.UserService, sessionService store.SessionService, templates *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		loginForm := forms.NewLogInFormFromRequest(r)
 
 		validationErrors := loginForm.Validate()
 		if len(validationErrors) > 0 {
 			w.WriteHeader(http.StatusBadRequest)
-			responses.RenderTemplate(w, templates, "login.html", map[string]any{
+			responses.RenderTemplate(w, r, templates, "login.html", map[string]any{
 				"form":                  loginForm,
 				"areCredentialsInvalid": true,
 			})
 			return
 		}
 
-		isAuthenticated, err := userService.AuthenticateUser(loginForm.Username, loginForm.Password, r.Context())
+		user, err := userService.AuthenticateUser(r.Context(), loginForm.Username, loginForm.Password)
 		if err != nil {
-			responses.RenderInternalErrorOnTemplate(w, templates, "login.html", map[string]any{})
+			if errors.Is(err, store.ErrInvalidCredentials) {
+				responses.RenderTemplate(w, r, templates, "login.html", map[string]any{
+					"form":                  loginForm,
+					"areCredentialsInvalid": true,
+				})
+			} else {
+				responses.RenderInternalErrorOnTemplate(w, r, templates, "login.html", map[string]any{})
+				log.Println(err)
+			}
+			return
+		}
+
+		sessionCookie, err := sessions.CreateSessionCookie()
+		if err != nil {
+			responses.RenderInternalErrorOnTemplate(w, r, templates, "login.html", map[string]any{})
 			log.Println(err)
 			return
 		}
 
-		if isAuthenticated {
-			sessionID, err := sessions.GenerateSessionID()
-			if err != nil {
-				responses.RenderInternalErrorOnTemplate(w, templates, "login.html", map[string]any{})
-				log.Println(err)
-				return
-			}
-
-			thirtyDaysFromNow := time.Now().AddDate(0, 0, 30)
-			sessionCookie := http.Cookie{
-				Name:     "sessionid",
-				Value:    sessionID,
-				Secure:   true,
-				HttpOnly: true,
-				Expires:  thirtyDaysFromNow,
-				SameSite: http.SameSiteStrictMode,
-				Path:     "/",
-			}
-
-			http.SetCookie(w, &sessionCookie)
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		} else {
-			responses.RenderTemplate(w, templates, "login.html", map[string]any{
-				"form":                  loginForm,
-				"areCredentialsInvalid": true,
-			})
+		_, err = sessionService.CreateSession(r.Context(), sessionCookie.Value, user.ID, sessionCookie.Expires)
+		if err != nil {
+			responses.RenderInternalErrorOnTemplate(w, r, templates, "login.html", map[string]any{})
+			log.Println(err)
+			return
 		}
+
+		http.SetCookie(w, &sessionCookie)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }

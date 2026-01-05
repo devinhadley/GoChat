@@ -1,0 +1,6 @@
+CREATE TABLE sessions (
+  session_id VARCHAR(255) NOT NULL PRIMARY KEY,
+  user_id BIGINT REFERENCES users(id) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);

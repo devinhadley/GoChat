@@ -9,7 +9,7 @@ import (
 
 func CreateHomeHandler(templates *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		responses.RenderTemplate(w, templates, "home.html", map[string]any{
+		responses.RenderTemplate(w, r, templates, "home.html", map[string]any{
 			"user": nil,
 		})
 	}
