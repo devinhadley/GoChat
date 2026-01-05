@@ -12,6 +12,11 @@
 			<a class="nostyle" href="/">
 				<img class="logo-image" alt="a gopher chatting" src="/static/img/logo.png">
 			</a>
+
+			{{ if .user }}
+			<h3>{{.user.Username}}</h3>
+			<a href="/logout"><h3>{{.user.Username}}</h3></a>
+			{{ end }}
 		</nav>
 
 		{{ if .isShowingInternalError }}

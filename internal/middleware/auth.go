@@ -14,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// AuthMiddleware looks at the sessionid and sets user to a pointer to the user on the existing session.
+// AuthMiddleware populates the User struct if the request contains a valid session id.
 func AuthMiddleware(next http.Handler, userService store.UserService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionCookie, err := r.Cookie(sessions.SessionCookieName)

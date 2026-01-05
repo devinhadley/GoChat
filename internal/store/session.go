@@ -19,6 +19,9 @@ func NewSessionService(db *pgxpool.Pool) SessionService {
 	}
 }
 
+// TODO: Make this session service DB session service and switch to
+// interface (think redis, or in memory in the future)!
+// TODO: Lets hash the session id.
 func (service *SessionService) CreateSession(ctx context.Context, sessionID string, userID int64, expiresAt time.Time) (models.Session, error) {
 	createSessionQuery := `
     INSERT INTO sessions (
@@ -40,4 +43,13 @@ func (service *SessionService) CreateSession(ctx context.Context, sessionID stri
 		return models.Session{}, err
 	}
 	return session, nil
+}
+
+func (service *SessionService) DeleteSession(ctx context.Context, sessionID string) error {
+	deleteSessionQuery := `
+    DELETE FROM sessions 
+    WHERE session_id = $1`
+
+	_, err := service.db.Exec(ctx, deleteSessionQuery, sessionID)
+	return err
 }

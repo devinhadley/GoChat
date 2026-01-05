@@ -55,6 +55,7 @@ func main() {
 func addUserHandlers(mux *http.ServeMux, userService store.UserService, sessionService store.SessionService, templates *template.Template) {
 	mux.HandleFunc("GET /login", handlers.CreateLoginGetHandler(templates))
 	mux.HandleFunc("POST /login", handlers.CreateLoginHandler(userService, sessionService, templates))
+	mux.HandleFunc("GET /logout", handlers.CreateLogoutHandler(userService, sessionService, templates))
 	mux.HandleFunc("GET /signup", handlers.CreateSignUpGetHandler(templates))
 	mux.HandleFunc("POST /signup", handlers.CreateUserHandler(userService, templates))
 }

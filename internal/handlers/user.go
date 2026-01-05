@@ -13,6 +13,7 @@ import (
 	"gochat/main/internal/utils/responses"
 	"gochat/main/internal/utils/sessions"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -126,6 +127,30 @@ func CreateLoginHandler(userService store.UserService, sessionService store.Sess
 		}
 
 		http.SetCookie(w, &sessionCookie)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+func CreateLogoutHandler(userService store.UserService, sessionService store.SessionService, templates *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sessionCookie, err := r.Cookie(sessions.SessionCookieName)
+		if err != nil {
+			if !errors.Is(err, http.ErrNoCookie) {
+				log.Printf("Error getting session cookie when deleting: %v", err)
+			}
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		err = sessionService.DeleteSession(r.Context(), sessionCookie.Value)
+		if err != nil {
+			if !errors.Is(err, pgx.ErrNoRows) {
+				log.Printf("Error deleting session cookie from db: %v", err)
+			}
+		}
+
+		clearSessionCookie := sessions.CreateClearSessionCookie()
+		http.SetCookie(w, &clearSessionCookie)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
